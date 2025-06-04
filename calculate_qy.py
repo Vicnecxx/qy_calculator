@@ -36,9 +36,9 @@ def calculate_qy():
         qy_sample = qy_ref * ratio_intensity * ratio_absorbance * ratio_refractive
 
         # 更新用户界面显示计算结果
-        result_label.config(text=f"待测样品的相对量子产率 QY_sample = {qy_sample:.4f}")
+        result_label.config(text=f"Sample QY: QY_sample = {qy_sample:.4f}")
 
     except ValueError:
         # 如果输入值不是数字，则显示错误信息
-        result_label.config(text="输入无效，请检查输入值。")
+        result_label.config(text="Please check your input values.", fg="red")
 

@@ -1,60 +1,70 @@
-
 # -*- coding: utf-8 -*- 
-# 荧光数据文件提取函数
+# Fluorescence data file extraction functions
 
 import pandas as pd
-#文件提取函数，默认不打印荧光图谱数据参数，若需要打印请设置参数为print_params =True，函数接口为文件路径，返回值是数据表格
-def extract_data(file_path, print_params =False):
-    # 读取整个Excel表格
+import os
+# File extraction function supporting CSV, XLSX and XLS formats
+# Set print_params=True to print parameters. Function takes file path as input and returns data table.
+def extract_data(file_path, print_params=False):
+    # Determine file type and read accordingly
     try:
-        df_raw = pd.read_excel(file_path, header=None, engine="xlrd")
+        ext = os.path.splitext(file_path)[1].lower()
+        if ext == '.csv':
+            df_raw = pd.read_csv(file_path, header=None)
+        elif ext == '.xlsx':
+            df_raw = pd.read_excel(file_path, header=None, engine='openpyxl')
+        elif ext == '.xls':
+            df_raw = pd.read_excel(file_path, header=None, engine='xlrd')
+        else:
+            print(f"Error: Unsupported file format {ext}. Only CSV, XLSX and XLS are supported.")
+            return None
     except Exception as e:
-        print(f"读取文件时出错: {e}")
+        print(f"Error reading file: {e}")
         return None
 
-    # 提取仪器参数
+    # Extract instrument parameters
     params = {
-        "Data mode:": None, "EX WL:": None, "EM  Start WL:": None,
-        "EM  End WL:": None, "Scan speed:": None, "Delay:": None,
+        "Data mode:": None, "EX WL:": None, "EM Start WL:": None,
+        "EM End WL:": None, "Scan speed:": None, "Delay:": None,
         "EX Slit:": None, "EM Slit:": None, "PMT Voltage:": None,
         "Response:": None, "Corrected spectra:": None, "Shutter control:": None
     }
 
-    # 遍历行查找参数
+    # Iterate through rows to find parameters
     data_start_row = None
     for idx, row in df_raw.iterrows():
         if row[0] in params:
             params[row[0]] = row[1]
-        # 定位数据起始行（"nm"和"Data"列头）
+        # Locate data starting row ("nm" and "Data" headers)
         if row[0] == "nm" and row[1] == "Data":
             data_start_row = idx + 1
             break
 
-    # 检查是否找到数据起始行
+    # Check if data starting row was found
     if data_start_row is None:
-        print("错误: 数据起始行未被成功定位。")
+        print("Error: Failed to locate data starting row.")
         return None
 
-    # 提取数据点
+    # Extract data points
     df_data = df_raw.iloc[data_start_row:, [0, 1]]
     df_data.columns = ["nm", "Data"]
-    df_data = df_data.dropna(subset=["nm"])  # 删除空行
+    df_data = df_data.dropna(subset=["nm"])  # Remove empty rows
 
-    # 打印参数
+    # Print parameters
     if print_params:
-        print("光谱仪器参数:")
+        print("Spectrometer parameters:")
         for key, value in params.items():
             if value is None:
-                print(f"错误: 参数 {key} 没有被成功提取。")
+                print(f"Warning: Parameter {key} was not successfully extracted.")
             else:
                 print(f"{key}\t{value}")
 
     return df_data.reset_index(drop=True)
 
-# 运行测试
+# Test run
 if __name__ == "__main__":
-    file_path = "D:\\\Xuan\Desktop\\相对量子产率计算软件\\test.xls"
+    file_path = "D:\\Xuan\\Desktop\\Relative Quantum Yield Calculator\\test.xls"
     df_data = extract_data(file_path, print_params=True)
     if df_data is not None:
-        print("\n数据表格:")
+        print("\nData table:")
         print(df_data)
